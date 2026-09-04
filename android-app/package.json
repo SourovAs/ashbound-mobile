@@ -1,0 +1,32 @@
+{
+  "name": "android-app",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "expo": "~57.0.20",
+    "expo-haptics": "~57.0.2",
+    "expo-keep-awake": "~57.0.1",
+    "expo-screen-orientation": "~57.0.2",
+    "expo-splash-screen": "~57.0.8",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-webview": "13.16.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "npm run build:game && expo start",
+    "android": "npm run build:game && expo start --android",
+    "ios": "npm run build:game && expo start --ios",
+    "web": "expo start --web",
+    "build:game": "node scripts/build-game.js",
+    "prebuild": "npm run build:game && expo prebuild",
+    "eas:dev": "npm run build:game && eas build --profile development --platform android",
+    "eas:preview": "npm run build:game && eas build --profile preview --platform android",
+    "eas:prod": "npm run build:game && eas build --profile production --platform android"
+  },
+  "private": true
+}

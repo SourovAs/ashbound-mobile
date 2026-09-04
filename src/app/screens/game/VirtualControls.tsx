@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from 'react';
 import type { Action } from '../../../game/input';
 import { cn } from '../../../utils/cn';
 import type { Settings } from '../../save';
@@ -23,16 +23,39 @@ export function VirtualControls({ settings, dashCooldown, specialReady, specialU
   const scale = settings.buttonSize;
   const opacity = settings.buttonOpacity;
 
+  const dockStyle: CSSProperties = mirrored
+    ? {
+        position: 'absolute',
+        left: 'max(14px, env(safe-area-inset-left))',
+        bottom: 'max(14px, env(safe-area-inset-bottom))',
+      }
+    : {
+        position: 'absolute',
+        right: 'max(14px, env(safe-area-inset-right))',
+        bottom: 'max(14px, env(safe-area-inset-bottom))',
+      };
+
+  const controlSurfaceStyle: CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    opacity,
+  };
+
   return (
-    <div className="pointer-events-none absolute inset-0 select-none" style={{ opacity }}>
-      <div className={cn('absolute bottom-0 top-0 w-1/2', mirrored ? 'right-0' : 'left-0')}>
+    <div className="pointer-events-none absolute inset-0 z-10 select-none" style={controlSurfaceStyle}>
+      <div
+        className="absolute top-0 bottom-0 w-1/2"
+        style={mirrored ? { right: 0 } : { left: 0 }}
+      >
         <Stick setAxis={setAxis} side={mirrored ? 'right' : 'left'} scale={scale} />
       </div>
-      <div className={cn('absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))]', mirrored ? 'left-[calc(1.25rem+env(safe-area-inset-left))]' : 'right-[calc(1.25rem+env(safe-area-inset-right))]')}>
-        <div className="relative" style={{ width: 200 * scale, height: 170 * scale }}>
+      <div className="pointer-events-none" style={dockStyle}>
+        <div className="relative" style={{ width: 220 * scale, height: 184 * scale }}>
           <ActionButton label="Jump" icon="jump" action="jump" setVirtual={setVirtual} size={76 * scale} style={{ right: 0, bottom: 0 }} />
-          <ActionButton label="Attack" icon="attack" action="attack" setVirtual={setVirtual} size={72 * scale} style={{ right: 96 * scale, bottom: 14 * scale }} />
-          <ActionButton label="Dash" icon="dash" action="dash" setVirtual={setVirtual} size={56 * scale} cooldown={dashCooldown} style={{ right: 22 * scale, bottom: 96 * scale }} />
+          <ActionButton label="Attack" icon="attack" action="attack" setVirtual={setVirtual} size={72 * scale} style={{ right: 96 * scale, bottom: 10 * scale }} />
+          <ActionButton label="Dash" icon="dash" action="dash" setVirtual={setVirtual} size={58 * scale} cooldown={dashCooldown} style={{ right: 18 * scale, bottom: 98 * scale }} />
           <ActionButton
             label={canInteract ? 'Ignite' : 'Special'}
             icon={canInteract ? 'interact' : 'special'}
@@ -41,7 +64,7 @@ export function VirtualControls({ settings, dashCooldown, specialReady, specialU
             size={54 * scale}
             ready={canInteract || specialReady}
             disabled={!canInteract && !specialUnlocked}
-            style={{ right: 118 * scale, bottom: 104 * scale }}
+            style={{ right: 118 * scale, bottom: 108 * scale }}
           />
         </div>
       </div>

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { HudSnapshot } from '../../../game/types';
 import { cn } from '../../../utils/cn';
 import type { Settings } from '../../save';
@@ -6,10 +7,19 @@ import { Bar, Icon } from '../../ui/primitives';
 export function Hud({ hud, settings, onPause, levelLabel }: { hud: HudSnapshot; settings: Settings; onPause: () => void; levelLabel: string }) {
   const contrast = settings.highContrast;
   const big = settings.textSize === 'large';
+  const topInset = 'max(10px, env(safe-area-inset-top))';
+  const leftInset = 'max(12px, env(safe-area-inset-left))';
+  const rightInset = 'max(12px, env(safe-area-inset-right))';
+
   return (
-    <div className="pointer-events-none absolute inset-0">
-      {/* Top-left: portrait + bars */}
-      <div className={cn('absolute top-[calc(0.6rem+env(safe-area-inset-top))] left-[calc(0.75rem+env(safe-area-inset-left))] flex items-center gap-2.5 p-1.5 pr-3', contrast ? 'bg-ash-950/85 border border-ash-500/50' : 'bg-ash-950/40 backdrop-blur-[2px]')}>
+    <div className="pointer-events-none absolute inset-0 z-20">
+      {/* Top-left: portrait + bars. Explicit inline anchors are used here and
+          for the controls below because Android WebView can drop arbitrary
+          Tailwind inset classes when loading inline HTML. */}
+      <div
+        className={cn('absolute flex items-center gap-2.5 p-1.5 pr-3', contrast ? 'bg-ash-950/85 border border-ash-500/50' : 'bg-ash-950/40 backdrop-blur-[2px]')}
+        style={{ top: topInset, left: leftInset } as CSSProperties}
+      >
         <div className="relative h-12 w-12 shrink-0 overflow-hidden border border-flame-500/50 sm:h-14 sm:w-14">
           <img src="/images/ui_portrait_flamebearer.jpg" alt="" className="h-full w-full object-cover object-top" />
           <div className="absolute inset-0 shadow-[inset_0_0_10px_rgba(0,0,0,0.7)]" />
@@ -32,14 +42,22 @@ export function Hud({ hud, settings, onPause, levelLabel }: { hud: HudSnapshot; 
         </div>
       </div>
 
-      {/* Top-center: objective */}
-      <div className="absolute top-[calc(0.7rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 text-center">
-        <p className="t-sub text-[0.5rem] text-ash-400">{levelLabel}</p>
-        <p className={cn('t-heading text-[0.7rem] text-ash-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]', big && 'text-[0.85rem]')}>{hud.objective}</p>
+      {/* Top-center: objective. Keep it in a bounded center lane so it cannot
+          collide with the portrait on the left or pause/currency on the right. */}
+      <div
+        className="absolute left-1/2 max-w-[34vw] -translate-x-1/2 text-center"
+        style={{ top: topInset } as CSSProperties}
+      >
+        <p className="t-sub truncate text-[0.5rem] text-ash-400">{levelLabel}</p>
+        <p className={cn('t-heading truncate text-[0.7rem] text-ash-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]', big && 'text-[0.85rem]')}>{hud.objective}</p>
       </div>
 
-      {/* Top-right: currency + pause */}
-      <div className="absolute top-[calc(0.6rem+env(safe-area-inset-top))] right-[calc(0.75rem+env(safe-area-inset-right))] flex items-center gap-2">
+      {/* Top-right: currency + pause. This stays entirely in the top band;
+          action buttons are explicitly docked in the bottom-right band. */}
+      <div
+        className="absolute flex items-center gap-2"
+        style={{ top: topInset, right: rightInset } as CSSProperties}
+      >
         <div className={cn('flex items-center gap-3 px-2.5 py-1.5', contrast ? 'bg-ash-950/85 border border-ash-500/50' : 'bg-ash-950/40 backdrop-blur-[2px]')}>
           <span className="flex items-center gap-1 text-flame-300">
             <Icon name="coin" size={15} />

@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "ASHBOUND: The Last Flame",
+    "slug": "ashbound-lastflame",
+    "version": "0.1.0",
+    "orientation": "landscape",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b0c10",
+    "primaryColor": "#0b0c10",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "requireFullScreen": true,
+      "bundleIdentifier": "com.ashbound.lastflame"
+    },
+    "android": {
+      "package": "com.ashbound.lastflame",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0b0c10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["VIBRATE"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-screen-orientation",
+        { "initialOrientation": "LANDSCAPE" }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0b0c10",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120,
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-status-bar"
+    ]
+  }
+}
