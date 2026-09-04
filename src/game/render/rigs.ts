@@ -1,5 +1,5 @@
 import { PALETTE, PLAYER } from '../config';
-import type { AshBeast, AshGrunt, Enemy } from '../enemies';
+import type { AshBeast, AshGrunt, Enemy, WardenOfCinders } from '../enemies';
 import type { Player } from '../player';
 
 type Ctx = CanvasRenderingContext2D;
@@ -549,6 +549,7 @@ function drawSword(ctx: Ctx, x: number, y: number, angle: number, flameLevel: nu
 
 export function drawEnemy(ctx: Ctx, e: Enemy, t: number) {
   if (e.kind === 'ash_beast') drawBeast(ctx, e as AshBeast, t);
+  else if (e.kind === 'warden_of_cinders') drawWarden(ctx, e as WardenOfCinders, t);
   else drawGrunt(ctx, e as AshGrunt, t);
 }
 
@@ -800,9 +801,107 @@ function drawBeast(ctx: Ctx, e: AshBeast, t: number) {
   drawEnemyHealth(ctx, e);
 }
 
+function drawWarden(ctx: Ctx, e: WardenOfCinders, t: number) {
+  const feetX = e.centerX;
+  const feetY = e.body.y + e.body.h;
+  const dying = e.dead ? Math.min(1, 1 - e.deathTimer / 0.7) : 0;
+  const windup = e.windupProgress;
+  const f = e.facing;
+  const stride = Math.sin(e.animTime * 7) * (e.state === 'chase' ? 0.7 : 0.2);
+
+  ctx.save();
+  ctx.globalAlpha = 1 - dying;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(feetX, feetY + 3, 34, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.translate(feetX, feetY + dying * 18);
+  ctx.rotate(dying * -0.9 * f);
+  ctx.scale(f, 1 - dying * 0.25);
+  if (e.hitFlash > 0) ctx.filter = 'brightness(3)';
+
+  limb(ctx, -10, -35, 27, -stride, 12, '#241c18');
+  limb(ctx, 10, -35, 27, stride, 12, '#352722');
+
+  ctx.fillStyle = '#211a19';
+  ctx.beginPath();
+  ctx.moveTo(-25, -30);
+  ctx.lineTo(25, -30);
+  ctx.lineTo(20, -82);
+  ctx.lineTo(10, -92);
+  ctx.lineTo(-13, -92);
+  ctx.lineTo(-22, -76);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#7d3a20';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-18, -65);
+  ctx.lineTo(18, -65);
+  ctx.stroke();
+
+  ctx.fillStyle = '#50423d';
+  ctx.fillRect(-14, -108, 28, 22);
+  ctx.fillStyle = '#181315';
+  ctx.beginPath();
+  ctx.moveTo(-18, -108);
+  ctx.lineTo(-10, -124);
+  ctx.lineTo(-3, -111);
+  ctx.lineTo(4, -126);
+  ctx.lineTo(13, -109);
+  ctx.lineTo(18, -104);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = `rgba(255,112,28,${0.75 + Math.sin(t * 8) * 0.2})`;
+  ctx.fillRect(2, -102, 8, 3);
+
+  const shieldX = 25;
+  ctx.fillStyle = '#49352e';
+  ctx.beginPath();
+  ctx.moveTo(shieldX - 13, -83);
+  ctx.quadraticCurveTo(shieldX + 14, -78, shieldX + 12, -50);
+  ctx.lineTo(shieldX, -38);
+  ctx.lineTo(shieldX - 13, -51);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#9b4a24';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  let swordAngle = 0.25;
+  if (e.state === 'windup') swordAngle = -1.8 * windup;
+  else if (e.state === 'attack') swordAngle = e.attackType === 0 ? 1.45 : -0.45;
+  const [handX, handY] = limb(ctx, -15, -76, 27, swordAngle, 9, '#45332d');
+  ctx.save();
+  ctx.translate(handX, handY);
+  ctx.rotate(swordAngle);
+  ctx.fillStyle = '#6f7782';
+  ctx.fillRect(-4, -8, 8, 60);
+  ctx.fillStyle = '#d85d1d';
+  ctx.globalAlpha = e.isEnraged ? 0.9 : 0.55 + windup * 0.35;
+  ctx.fillRect(-2, 0, 4, 48);
+  ctx.restore();
+  ctx.restore();
+
+  if (e.attackType === 2 && (e.state === 'windup' || e.state === 'attack')) {
+    ctx.save();
+    ctx.globalAlpha = e.state === 'windup' ? 0.25 + windup * 0.45 : 0.9;
+    ctx.strokeStyle = PALETTE.flameHot;
+    ctx.lineWidth = e.state === 'attack' ? 10 : 3;
+    ctx.beginPath();
+    ctx.moveTo(e.pillarX, feetY);
+    ctx.lineTo(e.pillarX, feetY - 115);
+    ctx.stroke();
+    if (e.state === 'attack') drawFlame(ctx, e.pillarX, feetY - 70, 18, t, 1.2);
+    ctx.restore();
+  }
+
+  drawEnemyHealth(ctx, e);
+}
+
 function drawEnemyHealth(ctx: Ctx, e: Enemy) {
   if (e.dead || e.hp >= e.maxHp) return;
-  const w = 36;
+  const w = e.kind === 'warden_of_cinders' ? 72 : 36;
   const x = e.centerX - w / 2;
   const y = e.body.y - 12;
   ctx.fillStyle = 'rgba(7,8,11,0.8)';

@@ -119,7 +119,7 @@ export function LevelSelect() {
 
             <div className="mt-auto flex items-center justify-between pt-3">
               <p className="t-caption text-[0.65rem]">
-                {chapter.id === 1 ? 'Vertical slice: 1-1 is fully playable. Further levels unlock as production continues.' : 'Content in production.'}
+                {chapter.id === 1 ? 'Chapter 1 campaign · Five playable levels · Warden encounter' : 'Content in production.'}
               </p>
               {chapterUnlocked && (
                 <Button variant="primary" size="sm" onClick={() => actions.playLevel(chapter.levels.find((l) => save.unlockedLevels.includes(l.id) && l.playable)?.id ?? '1-1')}>

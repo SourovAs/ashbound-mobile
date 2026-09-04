@@ -154,7 +154,7 @@ export class AshGrunt extends Enemy {
     return this.cfg.STAGGER;
   }
   contactDamage() {
-    return 0;
+    return this.state === 'attack' ? this.cfg.ATTACK_DAMAGE : 0;
   }
 
   attackHitbox(): Rect | null {
@@ -328,10 +328,200 @@ export class AshBeast extends Enemy {
   }
 }
 
+export class WardenOfCinders extends Enemy {
+  readonly kind = 'warden_of_cinders' as const;
+  private cfg = ENEMY.WARDEN_OF_CINDERS;
+  private poise = ENEMY.WARDEN_OF_CINDERS.POISE;
+  private enraged = false;
+  private attackIndex: 0 | 1 | 2 = 0;
+  private windupDuration = 0;
+  private activeDuration = 0;
+  private recoverDuration = 0;
+  private pillarTarget = 0;
+  private slamLanded = false;
+
+  constructor(def: EnemySpawnDef) {
+    const c = ENEMY.WARDEN_OF_CINDERS;
+    super(def, c.WIDTH, c.HEIGHT, c.HP, c.COIN_DROP, c.ESSENCE_DROP);
+    this.knockback = c.KNOCKBACK;
+  }
+
+  protected staggerDuration() {
+    return this.cfg.STAGGER;
+  }
+
+  contactDamage() {
+    if (this.state !== 'attack') return 0;
+    if (this.attackIndex === 1) return this.cfg.SLAM_DAMAGE;
+    if (this.attackIndex === 2) return this.cfg.PILLAR_DAMAGE;
+    return this.cfg.SWING_DAMAGE;
+  }
+
+  get windupProgress() {
+    return this.state === 'windup' ? Math.min(1, this.stateTime / this.windupDuration) : 0;
+  }
+
+  get attackType() {
+    return this.attackIndex;
+  }
+
+  get pillarX() {
+    return this.pillarTarget;
+  }
+
+  get isEnraged() {
+    return this.enraged;
+  }
+
+  attackHitbox(): Rect | null {
+    if (this.state !== 'attack') return null;
+    if (this.attackIndex === 0) {
+      const r = this.cfg.SWING_RANGE;
+      return { x: this.facing > 0 ? this.body.x + this.body.w - 8 : this.body.x - r + 8, y: this.body.y + 8, w: r, h: this.body.h - 14 };
+    }
+    if (this.attackIndex === 1) {
+      if (!this.body.grounded || this.stateTime < 0.2) return null;
+      return { x: this.centerX - 82, y: this.body.y + this.body.h - 72, w: 164, h: 72 };
+    }
+    return { x: this.pillarTarget - 25, y: this.body.y + this.body.h - 110, w: 50, h: 110 };
+  }
+
+  canBeHitFrom(fromX: number) {
+    if (this.state === 'stagger' || this.state === 'windup' || this.state === 'attack') return true;
+    const attackerIsLeft = fromX < this.centerX;
+    return attackerIsLeft !== (this.facing < 0);
+  }
+
+  takeDamage(amount: number, fromX: number, w: WorldServices, heavy = false) {
+    if (this.dead) return;
+    this.hp -= amount;
+    this.poise -= amount * (heavy ? 1.6 : 1);
+    this.hitFlash = 0.12;
+    const dir = fromX < this.centerX ? 1 : -1;
+    this.body.vx = dir * this.knockback * (heavy ? 0.8 : 0.4);
+    w.particles.emit('spark', this.centerX, this.centerY, 10, { speed: 240, life: 0.3, size: 3 });
+    w.particles.emit('flame', this.centerX, this.centerY, 8, { speed: 150, life: 0.45, size: 5 });
+    w.audio.play(heavy ? 'hit_heavy' : 'hit');
+    if (this.hp <= 0) {
+      this.die(w);
+      w.emit({ type: 'toast', text: 'The Warden of Cinders falls…' });
+    } else if (this.poise <= 0 || heavy) {
+      this.poise = this.cfg.POISE;
+      this.staggerTime = this.staggerDuration();
+      this.setState('stagger');
+      this.facing = (-dir) as Facing;
+    }
+  }
+
+  protected think(dt: number, player: Player, solids: readonly SolidDef[], w: WorldServices) {
+    const c = this.cfg;
+    const dx = player.centerX - this.centerX;
+    const dist = Math.abs(dx);
+    const dy = Math.abs(player.centerY - this.centerY);
+    const sees = !player.dead && dist < c.DETECT_RANGE && dy < 130;
+    const dir: Facing = dx > 0 ? 1 : -1;
+
+    if (!this.enraged && this.hp <= this.maxHp * 0.5) {
+      this.enraged = true;
+      w.audio.play('beast_roar');
+      w.camera.shake(5);
+      w.particles.emit('flame', this.centerX, this.centerY, 36, { speed: 240, life: 0.9, size: 7 });
+      w.emit({ type: 'toast', text: 'The Warden ignites!' });
+    }
+
+    switch (this.state) {
+      case 'patrol':
+        if (sees) {
+          this.body.vx = 0;
+          this.setState('alert');
+          w.audio.play('beast_roar');
+          break;
+        }
+        if (this.centerX <= this.patrolMin) this.facing = 1;
+        if (this.centerX >= this.patrolMax) this.facing = -1;
+        this.walk(this.facing, c.SPEED_PATROL, solids);
+        break;
+      case 'alert':
+        this.body.vx = 0;
+        this.facing = dir;
+        if (this.stateTime > 0.55) this.setState('chase');
+        break;
+      case 'chase':
+        if (player.dead || dist > c.LOSE_RANGE) {
+          this.setState('patrol');
+        } else if (dist < c.ATTACK_RANGE && dy < 90) {
+          this.startAttack(0, player.centerX, w);
+        } else if (dist < 280 && dy < 100 && (this.enraged || this.stateTime > 1.4)) {
+          this.startAttack(Math.random() < 0.5 ? 1 : 2, player.centerX, w);
+        } else {
+          this.walk(dir, c.SPEED_CHASE * (this.enraged ? 1.2 : 1), solids);
+        }
+        break;
+      case 'windup':
+        this.body.vx *= 1 - Math.min(1, 10 * dt);
+        if (this.attackIndex !== 2) this.facing = dir;
+        if (this.stateTime >= this.windupDuration) {
+          this.setState('attack');
+          w.audio.play(this.attackIndex === 1 ? 'hit_heavy' : 'swing');
+          if (this.attackIndex === 1) {
+            this.body.vy = -500;
+            this.body.vx = this.facing * 150;
+          }
+        }
+        break;
+      case 'attack':
+        if (this.attackIndex === 0) {
+          this.walk(this.facing, 130, solids, true);
+        } else if (this.attackIndex === 1 && !this.slamLanded && this.stateTime > 0.2 && this.body.grounded) {
+          this.slamLanded = true;
+          w.camera.shake(7);
+          w.particles.emit('dust', this.centerX, this.body.y + this.body.h, 18, { speed: 150, life: 0.65, size: 7 });
+          w.particles.emit('flame', this.centerX, this.body.y + this.body.h - 5, 16, { speed: 180, life: 0.6, size: 5 });
+        } else if (this.attackIndex === 2 && this.stateTime % 0.08 < dt) {
+          w.particles.emit('flame', this.pillarTarget, this.body.y + this.body.h - 45, 3, { speed: 120, life: 0.4, size: 7 });
+        }
+        if (this.stateTime >= this.activeDuration) this.setState('recover');
+        break;
+      case 'recover':
+        this.body.vx *= 1 - Math.min(1, 7 * dt);
+        if (this.stateTime >= this.recoverDuration) this.setState('chase');
+        break;
+      default:
+        break;
+    }
+  }
+
+  private startAttack(type: 0 | 1 | 2, targetX: number, w: WorldServices) {
+    const c = this.cfg;
+    const speed = this.enraged ? 0.75 : 1;
+    this.attackIndex = type;
+    this.slamLanded = false;
+    this.pillarTarget = targetX;
+    if (type === 0) {
+      this.windupDuration = c.SWING_WINDUP * speed;
+      this.activeDuration = c.SWING_ACTIVE;
+      this.recoverDuration = c.SWING_RECOVER * speed;
+    } else if (type === 1) {
+      this.windupDuration = c.SLAM_WINDUP * speed;
+      this.activeDuration = c.SLAM_ACTIVE;
+      this.recoverDuration = c.SLAM_RECOVER * speed;
+    } else {
+      this.windupDuration = c.PILLAR_WINDUP * speed;
+      this.activeDuration = c.PILLAR_ACTIVE;
+      this.recoverDuration = c.PILLAR_RECOVER * speed;
+    }
+    this.body.vx = 0;
+    this.setState('windup');
+    w.particles.emit('ember', this.centerX, this.body.y, 8, { speed: 70, life: 0.6, size: 4 });
+  }
+}
+
 export function createEnemy(def: EnemySpawnDef): Enemy {
   switch (def.kind) {
     case 'ash_beast':
       return new AshBeast(def);
+    case 'warden_of_cinders':
+      return new WardenOfCinders(def);
     case 'ash_grunt':
     default:
       return new AshGrunt(def);

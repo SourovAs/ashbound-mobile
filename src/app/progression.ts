@@ -201,7 +201,7 @@ export const CHAPTERS: ChapterMeta[] = [
     mood: 'Mysterious · Quiet · Dangerous',
     image: '/images/ui_chapter_forest.jpg',
     accent: '#8a91a3',
-    levels: mk(1, ['The Waking Ember', 'Roots of Ash', 'The Hollow Path', 'Broken Watch', 'Warden of Cinders'], 1),
+    levels: mk(1, ['The Waking Ember', 'Roots of Ash', 'The Hollow Path', 'Broken Watch', 'Warden of Cinders'], 5),
   },
   {
     id: 2,

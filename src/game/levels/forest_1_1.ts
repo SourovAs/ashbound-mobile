@@ -17,6 +17,12 @@ export const FOREST_1_1: LevelDef = {
   width: 4300,
   height: 540,
   seed: 1187,
+  hints: [
+    { x: 40, text: 'Move with the left control · Jump to cross the pit ahead' },
+    { x: 820, text: 'Attack to strike · Chain three hits for a heavy finisher' },
+    { x: 1180, text: 'Dash through danger — you are untouchable while dashing' },
+    { x: 2520, text: 'The gate is sealed. Ignite the altar with your flame' },
+  ],
   spawn: { x: 120, y: GROUND_Y - 60 },
 
   solids: [

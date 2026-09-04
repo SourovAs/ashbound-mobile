@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GameRuntime } from '../../../game/engine';
-import { FOREST_1_1 } from '../../../game/levels/forest_1_1';
-import type { HudSnapshot, LevelDef, LevelResult, RuntimeEvent } from '../../../game/types';
+import { LEVELS } from '../../../game/levels';
+import type { HudSnapshot, LevelResult, RuntimeEvent } from '../../../game/types';
 import { cn } from '../../../utils/cn';
 import { computeStats, levelMeta, rateLevel } from '../../progression';
 import { actions, useAppState } from '../../store';
@@ -10,8 +10,6 @@ import { uiSound } from '../../ui/uiSound';
 import { SettingsScreen } from '../Settings';
 import { Hud } from './Hud';
 import { VirtualControls } from './VirtualControls';
-
-const LEVELS: Record<string, LevelDef> = { '1-1': FOREST_1_1 };
 
 type Overlay = 'none' | 'pause' | 'settings' | 'death' | 'victory';
 
@@ -22,7 +20,8 @@ const fmtTime = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60
 export function GameScreen() {
   const { save, launch } = useAppState();
   const levelId = launch?.levelId ?? '1-1';
-  const level = LEVELS[levelId] ?? FOREST_1_1;
+  const level = LEVELS[levelId];
+  if (!level) throw new Error(`Unknown level: ${levelId}`);
   const meta = levelMeta(level.id);
 
   const containerRef = useRef<HTMLDivElement>(null);

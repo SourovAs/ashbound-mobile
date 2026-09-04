@@ -11,6 +11,7 @@ import { drawEnemy, drawPlayer } from './render/rigs';
 import type {
   CheckpointSnapshot,
   CollectibleKind,
+  EnemyKind,
   HudSnapshot,
   LevelDef,
   LevelResult,
@@ -68,14 +69,9 @@ interface GateEntity {
   h: number;
   open: boolean;
   progress: number;
+  requiresEnemy?: EnemyKind;
+  objectiveHint?: string;
 }
-
-const TUTORIAL_HINTS: { x: number; text: string }[] = [
-  { x: 40, text: 'Move with the left control · Jump to cross the pit ahead' },
-  { x: 820, text: 'Attack to strike · Chain three hits for a heavy finisher' },
-  { x: 1180, text: 'Dash through danger — you are untouchable while dashing' },
-  { x: 2520, text: 'The gate is sealed. Ignite the altar with your flame' },
-];
 
 /**
  * GameRuntime — owns the loop, world state and rendering. React talks to it
@@ -176,7 +172,8 @@ export class GameRuntime {
         this.respawnPoint = { x: cp.x - PLAYER.WIDTH / 2, y: cp.y - PLAYER.HEIGHT };
         // altars before the checkpoint are considered solved
         for (const a of this.altars) if (a.x < cp.x) this.lightAltar(a, true);
-        for (const h of TUTORIAL_HINTS.keys()) if (TUTORIAL_HINTS[h].x < cp.x) this.hintsShown.add(h);
+        const hints = this.level.hints ?? [];
+        for (const h of hints.keys()) if (hints[h].x < cp.x) this.hintsShown.add(h);
       }
     }
 
@@ -450,8 +447,7 @@ export class GameRuntime {
       if (!e.dead && !p.dead) {
         const ehb = e.attackHitbox();
         if (ehb && overlaps(ehb, p.body)) {
-          const dmg = e.kind === 'ash_beast' ? e.contactDamage() : 14;
-          p.takeDamage(dmg, e.centerX, this.world);
+          p.takeDamage(e.contactDamage(), e.centerX, this.world);
         }
       }
     }
@@ -516,7 +512,7 @@ export class GameRuntime {
     }
 
     // --- tutorial hints
-    TUTORIAL_HINTS.forEach((h, i) => {
+    (this.level.hints ?? []).forEach((h, i) => {
       if (!this.hintsShown.has(i) && p.centerX > h.x) {
         this.hintsShown.add(i);
         this.onEvent({ type: 'toast', text: h.text });
@@ -548,6 +544,17 @@ export class GameRuntime {
   }
 
   /* ------------------------------------------------------------ gameplay helpers */
+  private openGate(g: GateEntity, silent = false) {
+    if (g.open) return;
+    g.open = true;
+    g.progress = silent ? 1 : 0;
+    this.rebuildSolids();
+    if (!silent) {
+      window.setTimeout(() => this.audio.play('gate'), 400);
+      window.setTimeout(() => this.camera.shake(4), 400);
+    }
+  }
+
   private lightAltar(a: AltarEntity, silent: boolean) {
     a.lit = true;
     a.litTime = silent ? 10 : 0;
@@ -560,15 +567,7 @@ export class GameRuntime {
     }
     if (a.opens) {
       const g = this.gates.find((x) => x.id === a.opens);
-      if (g && !g.open) {
-        g.open = true;
-        g.progress = silent ? 1 : 0;
-        if (!silent) {
-          window.setTimeout(() => this.audio.play('gate'), 400);
-          window.setTimeout(() => this.camera.shake(4), 400);
-        }
-        this.rebuildSolids();
-      }
+      if (g) this.openGate(g, silent);
     }
   }
 
@@ -620,6 +619,12 @@ export class GameRuntime {
     this.player.addFlame(12);
     this.camera.shake(4);
     this.hitStop = Math.max(this.hitStop, 0.08);
+    for (const g of this.gates) {
+      if (!g.open && g.requiresEnemy === e.kind) {
+        this.onEvent({ type: 'toast', text: g.objectiveHint ?? 'The seal breaks…' });
+        this.openGate(g);
+      }
+    }
   }
 
   private buildResult(): LevelResult {
@@ -649,7 +654,7 @@ export class GameRuntime {
       maxFlame: p.stats.maxFlame,
       coins: this.coins,
       essence: this.essence,
-      objective: this.gates.some((g) => !g.open) ? 'Unseal the Gate' : this.level.objective,
+      objective: this.gates.find((g) => !g.open)?.objectiveHint ?? (this.gates.some((g) => !g.open) ? 'Unseal the Gate' : this.level.objective),
       dashCooldown: p.dashCooldown <= 0 ? 1 : 1 - p.dashCooldown / (PLAYER.DASH_COOLDOWN * p.stats.dashCooldownMult),
       specialReady: p.stats.specialUnlocked && p.specialCooldown <= 0 && p.flame >= PLAYER.SPECIAL_COST,
       canInteract: !!this.nearAltar,

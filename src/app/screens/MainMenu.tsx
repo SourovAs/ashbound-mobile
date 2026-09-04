@@ -75,7 +75,7 @@ export function MainMenu() {
 
         {/* Footer */}
         <div className="flex items-end justify-between">
-          <p className="t-caption text-[0.65rem] opacity-70">v0.1.0 · Vertical Slice · Ashen Forest 1-1</p>
+          <p className="t-caption text-[0.65rem] opacity-70">v0.2.0 · Chapter 1 · Ashen Forest</p>
           {notice && (
             <button className="panel-flat anim-fade px-3 py-1.5 text-left text-[0.7rem] text-flame-300" onClick={() => actions.dismissNotice()}>
               {notice} <span className="text-ash-400">· dismiss</span>

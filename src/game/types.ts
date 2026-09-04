@@ -25,7 +25,7 @@ export type PlayerAnim =
   | 'interact'
   | 'victory';
 
-export type EnemyKind = 'ash_grunt' | 'ash_beast';
+export type EnemyKind = 'ash_grunt' | 'ash_beast' | 'warden_of_cinders';
 
 export type EnemyState =
   | 'patrol'
@@ -85,6 +85,8 @@ export interface GateDef {
   y: number;
   w: number;
   h: number;
+  requiresEnemy?: EnemyKind;
+  objectiveHint?: string;
 }
 
 export interface PropDef {
@@ -115,6 +117,7 @@ export interface LevelDef {
   exit: Rect;
   /** deterministic decoration seed */
   seed: number;
+  hints?: { x: number; text: string }[];
 }
 
 /** Stats provided by the application layer (upgrades / progression). */
