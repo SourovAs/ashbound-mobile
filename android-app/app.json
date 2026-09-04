@@ -43,7 +43,14 @@
           "resizeMode": "contain"
         }
       ],
-      "expo-status-bar"
+      [
+        "expo-status-bar",
+        { "hidden": true, "style": "light" }
+      ],
+      [
+        "expo-navigation-bar",
+        { "hidden": true, "style": "light", "enforceContrast": false }
+      ]
     ]
   }
 }

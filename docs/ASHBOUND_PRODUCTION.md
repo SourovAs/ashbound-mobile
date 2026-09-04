@@ -60,8 +60,8 @@ Future sprite atlases follow `player_<state>_<nn>`, `enemy_<kind>_<state>`, `env
 
 ## 5. Android release checklist
 - [ ] Application ID `com.ashbound.lastflame`, versionCode/versionName from CI
-- [ ] Landscape-only activity, immersive sticky, display-cutout `shortEdges`
-- [ ] Adaptive icon (flame on charcoal), splash aligned with BootSplash
+- [x] Landscape-only activity, immersive sticky fullscreen (status bar + nav bar hidden)
+- [x] Adaptive icon (flame on charcoal), splash aligned with BootSplash
 - [ ] Release signing + Android App Bundle; R8 enabled
 - [ ] Permissions: `VIBRATE` only
 - [ ] Crash reporting + analytics behind a consent flag; Data Safety form: no data collected

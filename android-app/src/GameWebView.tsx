@@ -14,11 +14,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview';
 import { StatusBar } from 'expo-status-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 
 import { GAME_HTML } from './gameBundle';
 import { INJECTED_BRIDGE_JS } from './bridge/injectedJs';
 import { createBridgeDispatcher, parseBridgeMessage } from './bridge/GameBridge';
 import { useBackButton } from './hooks/useBackButton';
+import { useImmersiveMode } from './hooks/useImmersiveMode';
 import { useLifecycle } from './hooks/useLifecycle';
 import { useOrientationLock } from './hooks/useOrientationLock';
 import { BootSplash } from './ui/BootSplash';
@@ -39,6 +41,7 @@ export function GameWebView() {
   useOrientationLock();
   useLifecycle(webViewRef);
   useBackButton(webViewRef, atRootRef);
+  useImmersiveMode();
 
   // Fallback: if the bridge's `ready` message never arrives within 8s, hide
   // the boot splash anyway so the user isn't stuck on an infinite loader.
@@ -85,7 +88,8 @@ export function GameWebView() {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar hidden animated style="light" />
+      <NavigationBar hidden style="light" />
       <WebView
         ref={webViewRef}
         source={{ html: GAME_HTML, baseUrl: 'webview://ashbound/game/' }}
