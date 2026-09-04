@@ -2,7 +2,7 @@
   "expo": {
     "name": "ASHBOUND: The Last Flame",
     "slug": "ashbound-lastflame",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "landscape",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",

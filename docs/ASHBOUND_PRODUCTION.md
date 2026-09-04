@@ -1,6 +1,6 @@
 # ASHBOUND: THE LAST FLAME — Production Notes
 
-Vertical slice: **Ashen Forest 1-1 "The Waking Ember"** (quality benchmark for all future content).
+Complete game: **Ashen Forest** — five levels (1-1 through 1-5) culminating in the Warden of Cinders boss encounter.
 
 ## 1. Architecture
 
@@ -26,7 +26,7 @@ src/
     ├── audio.ts                WebAudio Music/SFX buses; procedural SFX & adaptive drone
     ├── render/rigs.ts          Segmented character rig (head/hair/torso/cloak/limbs/boots/sword/flame)
     ├── render/environment.ts   Seeded parallax tiles (pre-rendered), platforms, props, interactables
-    └── levels/forest_1_1.ts    Level data (solids, hazards, enemies, collectibles, checkpoints, gates)
+    └── levels/                forest_1_1 through forest_1_5 + central registry
 ```
 
 **React ↔ Runtime contract** (`types.ts`): React constructs `GameRuntime(canvas, container, options)` and
@@ -47,8 +47,9 @@ coupling exists in gameplay code.
 - Lighting: darkness pass with the flame as primary light; lanterns, checkpoints, altar, exit as secondary
 
 ## 3. Save system
-- `SAVE_VERSION = 2`, migration table keyed by source version, structural validation/repair
+- `SAVE_VERSION = 3`, migration table keyed by source version, structural validation/repair
 - Primary + backup slots; load order: primary → backup → fresh (user is notified)
+- v2→v3 migration trims level references to Chapter 1 only (campaign scope reduced); currency, upgrades, and Chapter 1 progress preserved
 - Persists: currency, currentLevel, checkpoint, unlockedLevels, per-level records/stars, upgrades,
   achievements, stats, settings
 
@@ -68,7 +69,6 @@ Future sprite atlases follow `player_<state>_<nn>`, `enemy_<kind>_<state>`, `env
 - [ ] Content rating: Fantasy violence (mild)
 - [ ] Device matrix QA: low/mid/high-end, 16:9 · 19.5:9 · 20:9 · tablets
 
-## 6. Known scope (vertical slice)
-Playable: 1-1. Levels 1-2 → 5-5 are catalogued and unlock logic is live, but content is
-"In production" and routed to level select. Enemy framework includes Ash Grunt and Ash Beast;
-Shieldbearer/Flame Mage/Boss extend `Enemy` in `enemies.ts`.
+## 6. Game scope
+Playable: 1-1 through 1-5 (Ashen Forest). Enemy framework includes Ash Grunt, Ash Beast,
+and the Warden of Cinders boss. The campaign is complete at five levels.

@@ -42,10 +42,10 @@ export function Hud({ hud, settings, onPause, levelLabel }: { hud: HudSnapshot; 
         </div>
       </div>
 
-      {/* Top-center: objective. Keep it in a bounded center lane so it cannot
-          collide with the portrait on the left or pause/currency on the right. */}
+      {/* Top-center: objective. Hidden on very narrow screens to avoid collision
+          with the portrait block on the left and currency/pause on the right. */}
       <div
-        className="absolute left-1/2 max-w-[34vw] -translate-x-1/2 text-center"
+        className="absolute left-1/2 hidden max-w-[28vw] -translate-x-1/2 text-center sm:block sm:max-w-[34vw]"
         style={{ top: topInset } as CSSProperties}
       >
         <p className="t-sub truncate text-[0.5rem] text-ash-400">{levelLabel}</p>

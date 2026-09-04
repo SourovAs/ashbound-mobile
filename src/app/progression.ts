@@ -203,38 +203,6 @@ export const CHAPTERS: ChapterMeta[] = [
     accent: '#8a91a3',
     levels: mk(1, ['The Waking Ember', 'Roots of Ash', 'The Hollow Path', 'Broken Watch', 'Warden of Cinders'], 5),
   },
-  {
-    id: 2,
-    name: 'Ruined Village',
-    mood: 'Tragic · Hostile',
-    image: null,
-    accent: '#c2410c',
-    levels: mk(2, ['Smoke over Harrow', 'The Burning Row', 'Wellspring', 'Collapse', 'The Shieldbearer'], 0),
-  },
-  {
-    id: 3,
-    name: 'Crystal Caverns',
-    mood: 'Mystical · Dangerous',
-    image: null,
-    accent: '#3fb7d9',
-    levels: mk(3, ['Descent', 'Glass Bridges', 'Reflections', 'The Deep Vein', 'Flame Mage'], 0),
-  },
-  {
-    id: 4,
-    name: 'Forgotten Temple',
-    mood: 'Ancient · Mysterious',
-    image: null,
-    accent: '#b8a06a',
-    levels: mk(4, ['Threshold', 'Hall of Chains', 'Silent Statues', 'The Mechanism', 'Keeper of Doors'], 0),
-  },
-  {
-    id: 5,
-    name: 'The Ash Citadel',
-    mood: 'Epic · Final Confrontation',
-    image: null,
-    accent: '#9b1d1d',
-    levels: mk(5, ['The Red Sky', 'Ramparts', 'Corrupted Flame', 'The Throne Stair', 'The Last Flame'], 0),
-  },
 ];
 
 /** Latest level that is both unlocked in the save and actually playable in this build. */
@@ -249,6 +217,16 @@ export function resolvePlayableLevel(save: SaveData): string {
 export function levelMeta(id: string): LevelMeta | undefined {
   for (const c of CHAPTERS) for (const l of c.levels) if (l.id === id) return l;
   return undefined;
+}
+
+/** The final playable level id. Used to detect campaign completion. */
+export const LAST_LEVEL_ID = (() => {
+  const all = CHAPTERS.flatMap((c) => c.levels).filter((l) => l.playable);
+  return all[all.length - 1]?.id ?? '1-1';
+})();
+
+export function isLastLevel(id: string): boolean {
+  return id === LAST_LEVEL_ID;
 }
 
 /** Star rating for a completed level. */

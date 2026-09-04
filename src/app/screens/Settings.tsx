@@ -68,7 +68,7 @@ export function SettingsScreen({ embedded, onClose }: { embedded?: boolean; onCl
           <div className="flex flex-col gap-3 text-xs">
             <Row label="Language" value="English" />
             <Row label="Save format" value={`v${SAVE_VERSION} · local · versioned with migrations`} />
-            <Row label="Build" value="0.1.0 · vertical slice" />
+            <Row label="Build" value="1.0.0 · Ashen Forest" />
             <div className="border-t border-ash-700/60 pt-3">
               <p className="t-heading mb-1 text-[0.65rem] text-ash-200">Privacy</p>
               <p className="t-caption leading-relaxed">ASHBOUND stores progress only on this device. No personal data is collected. Analytics and crash reporting are disabled in this build.</p>

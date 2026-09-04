@@ -22,7 +22,7 @@ export function Character() {
 
   return (
     <ScreenFrame title="The Flamebearer" subtitle="Chosen by the last living flame" onBack={() => actions.navigate('menu')} right={<Currency coins={save.currency.coins} essence={save.currency.essence} compact />}>
-      <div className="grid h-full min-h-0 grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4">
+      <div className="grid h-full min-h-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)]">
         {/* Portrait & core stats */}
         <Panel className="flex flex-col overflow-hidden">
           <div className="relative h-40 shrink-0 sm:h-48">

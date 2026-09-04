@@ -4,7 +4,7 @@
  * a native store without touching callers.
  */
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 const SAVE_KEY = 'ashbound.save';
 const BACKUP_KEY = 'ashbound.save.bak';
 
@@ -122,6 +122,18 @@ const MIGRATIONS: Record<number, Migration> = {
     const stats = { enemiesDefeated: 0, deaths: 0, playtimeSec: 0, levelsCompleted: 0, ...((d.stats as object) ?? {}) };
     return { ...d, settings, stats, version: 2 };
   },
+  // v2 → v3: campaign trimmed to Chapter 1 only. Remove references to levels
+  // that no longer exist (Chapters 2-5 catalog was removed). Currency, upgrades,
+  // and Chapter 1 progress are all preserved.
+  2: (d) => {
+    const validLevels = new Set(['1-1', '1-2', '1-3', '1-4', '1-5']);
+    const unlocked = Array.isArray(d.unlockedLevels) ? (d.unlockedLevels as string[]).filter((id) => validLevels.has(id)) : [];
+    if (!unlocked.includes('1-1')) unlocked.unshift('1-1');
+    const currentLevel = typeof d.currentLevel === 'string' && validLevels.has(d.currentLevel) ? d.currentLevel : '1-1';
+    const levels = typeof d.levels === 'object' && d.levels ? Object.fromEntries(Object.entries(d.levels as Record<string, unknown>).filter(([id]) => validLevels.has(id))) : {};
+    const checkpoint = d.checkpoint && typeof d.checkpoint === 'object' && validLevels.has((d.checkpoint as { levelId?: string }).levelId ?? '') ? d.checkpoint : null;
+    return { ...d, unlockedLevels: unlocked, currentLevel, levels, checkpoint, version: 3 };
+  },
 };
 
 function migrate(raw: Record<string, unknown>): SaveData {
@@ -148,21 +160,22 @@ function validate(d: Record<string, unknown>): SaveData {
   settings.buttonSize = Math.min(1.3, Math.max(0.8, num(settings.buttonSize, 1)));
   settings.buttonOpacity = Math.min(1, Math.max(0.3, num(settings.buttonOpacity, 0.75)));
 
-  const unlocked = Array.isArray(d.unlockedLevels) ? (d.unlockedLevels as string[]).filter((x) => typeof x === 'string') : [];
+  const VALID_LEVELS = new Set(['1-1', '1-2', '1-3', '1-4', '1-5']);
+  const unlocked = Array.isArray(d.unlockedLevels) ? (d.unlockedLevels as string[]).filter((x) => typeof x === 'string' && VALID_LEVELS.has(x)) : [];
   if (!unlocked.includes('1-1')) unlocked.unshift('1-1');
+  const currentLevel = typeof d.currentLevel === 'string' && VALID_LEVELS.has(d.currentLevel) ? d.currentLevel : '1-1';
+  const levels = typeof d.levels === 'object' && d.levels ? Object.fromEntries(Object.entries(d.levels as Record<string, unknown>).filter(([id]) => VALID_LEVELS.has(id))) as SaveData['levels'] : {};
+  const checkpoint = d.checkpoint && typeof d.checkpoint === 'object' && VALID_LEVELS.has((d.checkpoint as { levelId?: string }).levelId ?? '') ? (d.checkpoint as SaveData['checkpoint']) : null;
 
   return {
     version: SAVE_VERSION,
     createdAt: num(d.createdAt, def.createdAt),
     updatedAt: num(d.updatedAt, def.updatedAt),
     currency: { coins: Math.max(0, Math.floor(num(cur.coins, 0))), essence: Math.max(0, Math.floor(num(cur.essence, 0))) },
-    currentLevel: typeof d.currentLevel === 'string' ? d.currentLevel : '1-1',
-    checkpoint:
-      d.checkpoint && typeof d.checkpoint === 'object' && typeof (d.checkpoint as { id?: unknown }).id === 'string'
-        ? (d.checkpoint as SaveData['checkpoint'])
-        : null,
+    currentLevel,
+    checkpoint,
     unlockedLevels: unlocked,
-    levels: typeof d.levels === 'object' && d.levels ? (d.levels as SaveData['levels']) : {},
+    levels,
     upgrades: typeof d.upgrades === 'object' && d.upgrades ? (d.upgrades as SaveData['upgrades']) : {},
     achievements: Array.isArray(d.achievements) ? (d.achievements as string[]) : [],
     stats: {

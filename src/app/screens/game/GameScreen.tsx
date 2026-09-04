@@ -3,7 +3,7 @@ import { GameRuntime } from '../../../game/engine';
 import { LEVELS } from '../../../game/levels';
 import type { HudSnapshot, LevelResult, RuntimeEvent } from '../../../game/types';
 import { cn } from '../../../utils/cn';
-import { computeStats, levelMeta, rateLevel } from '../../progression';
+import { computeStats, isLastLevel, levelMeta, rateLevel } from '../../progression';
 import { actions, useAppState } from '../../store';
 import { Button, Embers, Icon, Panel } from '../../ui/primitives';
 import { uiSound } from '../../ui/uiSound';
@@ -155,6 +155,7 @@ export function GameScreen() {
 
   const stats = computeStats(save);
   const levelLabel = `${level.id} · ${meta?.name ?? level.name}`;
+  const finalLevel = isLastLevel(level.id);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-ash-950">
@@ -254,7 +255,7 @@ export function GameScreen() {
           <Embers count={30} />
           <Panel className="anim-rise relative w-[30rem] max-w-[94vw] p-5">
             <div className="text-center">
-              <p className="t-sub text-[0.65rem] text-flame-400">Level Complete</p>
+              <p className="t-sub text-[0.65rem] text-flame-400">{finalLevel ? 'Campaign Complete' : 'Level Complete'}</p>
               <h2 className="t-title text-2xl text-ash-100">{level.name}</h2>
               <div className="mt-2 flex justify-center gap-1">
                 {[1, 2, 3].map((s) => (
@@ -271,7 +272,13 @@ export function GameScreen() {
               <Stat icon="flame" label="Deaths" v={`${result.deaths}`} />
             </div>
             <p className="t-caption mt-3 text-center text-[0.65rem]">
-              Performance: {rateLevel(result.timeSec, result.collectiblesFound, result.collectiblesTotal, result.deaths) === 3 ? 'Flawless — the flame burns bright.' : stars === 2 ? 'Strong — the ash yields.' : 'Survived — carry the flame onward.'}
+              {finalLevel
+                ? 'The Warden has fallen. The Ashen Forest is purged. The flame endures.'
+                : rateLevel(result.timeSec, result.collectiblesFound, result.collectiblesTotal, result.deaths) === 3
+                  ? 'Flawless — the flame burns bright.'
+                  : stars === 2
+                    ? 'Strong — the ash yields.'
+                    : 'Survived — carry the flame onward.'}
             </p>
             <div className="mt-4 flex gap-2">
               <Button className="flex-1" onClick={() => runtimeRef.current?.restart()}>
@@ -280,8 +287,8 @@ export function GameScreen() {
               <Button variant="ghost" className="flex-1" onClick={() => actions.navigate('upgrades')}>
                 Upgrades
               </Button>
-              <Button variant="primary" className="flex-1" onClick={() => actions.navigate('levels')}>
-                Next Level
+              <Button variant="primary" className="flex-1" onClick={() => actions.navigate(finalLevel ? 'menu' : 'levels')}>
+                {finalLevel ? 'Main Menu' : 'Next Level'}
               </Button>
             </div>
           </Panel>

@@ -20,7 +20,7 @@ export function Upgrades() {
     <ScreenFrame title="Upgrades" subtitle="Shape the flame that carries you" onBack={() => actions.navigate('menu')} right={<Currency coins={save.currency.coins} essence={save.currency.essence} compact />}>
       <div className="flex h-full min-h-0 flex-col gap-3">
         {/* Tabs */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {UPGRADE_CATEGORIES.map((c) => (
             <Button key={c.id} size="sm" selected={cat === c.id} variant={cat === c.id ? 'default' : 'ghost'} onClick={() => pickCat(c.id)}>
               {c.label}
@@ -28,16 +28,16 @@ export function Upgrades() {
           ))}
         </div>
 
-        <div className="flex min-h-0 flex-1 gap-4">
-          {/* Node list */}
-          <div className="scroll-y flex w-1/2 flex-col gap-2 pr-1">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
+          {/* Node list — full width on narrow, half on wider */}
+          <div className="scroll-y flex max-h-[40vh] flex-col gap-2 pr-1 md:max-h-none md:w-1/2">
             {list.map((u) => (
               <UpgradeRow key={u.id} u={u} selected={u.id === selected.id} onSelect={() => setSelectedId(u.id)} level={upgradeLevel(save, u.id)} unlocked={upgradeUnlocked(save, u)} />
             ))}
           </div>
 
-          {/* Detail */}
-          <Panel className="flex w-1/2 flex-col p-4">
+          {/* Detail — full width on narrow, half on wider */}
+          <Panel className="flex flex-col p-4 md:w-1/2">
             <UpgradeDetail u={selected} />
           </Panel>
         </div>

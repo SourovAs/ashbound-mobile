@@ -4,9 +4,11 @@
  * loaded locally by the WebView.
  *
  * The game already uses vite-plugin-singlefile, so JS + CSS are inlined into a
- * single index.html. The only external references are the public/images/* JPGs,
- * which we inline here as base64 data URIs so the resulting index.html is fully
- * self-contained and loadable from a file:// URI inside react-native-webview.
+ * single index.html. External references that remain are:
+ *   - public/images/* JPGs  → inlined as base64 data URIs
+ *   - public/fonts/* woff2  → inlined as base64 data URIs (CSS inlined too)
+ * The resulting index.html is fully self-contained and loadable from a file://
+ * URI inside react-native-webview. 100% offline capable.
  *
  * Run from the android-app directory:  node scripts/build-game.js
  */
@@ -49,6 +51,34 @@ function inlineImages(html) {
   return out;
 }
 
+function inlineFonts(html) {
+  const fontsCssPath = path.join(GAME_DIST, 'fonts', 'fonts.css');
+  if (!fs.existsSync(fontsCssPath)) {
+    log('No dist/fonts/fonts.css found — skipping font inlining.');
+    return html;
+  }
+  let css = fs.readFileSync(fontsCssPath, 'utf8');
+  const fontsDir = path.join(GAME_DIST, 'fonts');
+  // Replace each url('/fonts/*.woff2') with a base64 data URI
+  for (const file of fs.readdirSync(fontsDir)) {
+    if (!file.endsWith('.woff2')) continue;
+    const abs = path.join(fontsDir, file);
+    const buf = fs.readFileSync(abs);
+    const dataUri = `data:font/woff2;base64,${buf.toString('base64')}`;
+    const token = `/fonts/${file}`;
+    const before = css;
+    css = css.split(token).join(dataUri);
+    if (css !== before) log(`Inlined /fonts/${file} (${(buf.length / 1024).toFixed(1)} KB)`);
+  }
+  // Replace the <link rel="stylesheet" href="...fonts/fonts.css" /> with an inline <style>.
+  // Vite may emit either /fonts/fonts.css or ./fonts/fonts.css depending on base config.
+  const linkTag = /<link\s+rel="stylesheet"\s+href="\.?\/?fonts\/fonts\.css"\s*\/?>/i;
+  const before = html;
+  html = html.replace(linkTag, `<style>\n${css}\n</style>`);
+  if (html === before) log('WARNING: fonts.css <link> tag not found in HTML — fonts may not be inlined.');
+  return html;
+}
+
 function main() {
   log(`Game root: ${ROOT}`);
   log(`Game dist: ${GAME_DIST}`);
@@ -72,7 +102,11 @@ function main() {
   let html = fs.readFileSync(distHtml, 'utf8');
   html = inlineImages(html);
 
-  // 3. Write the self-contained bundle as a TypeScript string export so it
+  // 3. Inline fonts (CSS + woff2) so no external font requests remain.
+  log('Inlining font assets as base64 data URIs...');
+  html = inlineFonts(html);
+
+  // 4. Write the self-contained bundle as a TypeScript string export so it
   //    imports directly into the app with no Metro asset config or runtime
   //    file loading. This is the most robust approach across dev/prod/EAS.
   ensureDir(OUT_DIR);
